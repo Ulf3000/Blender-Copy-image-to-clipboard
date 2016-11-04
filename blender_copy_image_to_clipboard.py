@@ -21,7 +21,8 @@ def main():
     img0 = bpy.data.images['Viewer Node']
     W,H = img0.size
 
-    px0 = img0.pixels[:]
+    #px0 = img0.pixels[:]
+    px0 = [min(max(v, 0), 1) for v in img0.pixels] ## <!> clamp
     pixels = np.array([int(v*255) for v in px0])
     pixels.resize(W, H*4)
     pixels = np.flipud(pixels).flatten()
