@@ -45,7 +45,7 @@ import win32clipboard
 bl_info = {
     "name": "Copy vewer node image to clipboard",
     "author": "skishida",
-    "version": (0, 1),
+    "version": (0, 2),
     "blender": (2, 80, 75),
     "location": "View > Image",
     "description": "Copy vewer node image to clipboard \n need to adding ""vewer node"" to compositor node.",
@@ -98,7 +98,7 @@ class CopyImageToClipboard_OT_copytoclipboard(bpy.types.Operator):
         img0 = bpy.data.images['Viewer Node']
         W,H = img0.size
 
-        print("{w},{h}".format(w=W, h=H))
+        # print("{w},{h}".format(w=W, h=H))
 
         if W == 0 & H == 0:
             self.report({'WARNING'}, 'no image for copy, are vewer node exist & connected ?')
@@ -107,7 +107,7 @@ class CopyImageToClipboard_OT_copytoclipboard(bpy.types.Operator):
         pxs = img0.pixels[:]
         rw = np.array(pxs)
 
-        print(rw)
+        # print(rw)
 
         if np.any(np.isnan(rw)):
             self.report({'WARNING'}, 'some data types are wrong')
