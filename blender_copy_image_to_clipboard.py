@@ -27,6 +27,10 @@ ref:
 
     Write image to Windows clipboard in python with PIL and win32clipboard?
     https://stackoverflow.com/questions/7050448/write-image-to-windows-clipboard-in-python-with-pil-and-win32clipboard
+
+todo:
+    - 最新のレンダリング結果を取れないことがある(レンダリング中断時等) ref: https://developer.blender.org/T54314
+    - 虚無を入力したときに発生する `RuntimeWarning: invalid value encountered in true_divide`
 '''
 
 
@@ -54,6 +58,14 @@ bl_info = {
 
 addon_keymaps = [] 
 
+class testst_OT_testset(bpy.types.Operator):
+    bl_label="testshortcut"
+    bl_idname = "test.key"
+    
+    def execute(self, context):
+        self.report({'INFO'}, 'UGOKU')
+        return {'FINISHED'} 
+
 class CopyImageToClipboard_OT_copytoclipboard(bpy.types.Operator):
     bl_label="Send ViewerNode Image to Clipboard"
     bl_idname = "ci.sendtoclipboard"
@@ -80,12 +92,26 @@ class CopyImageToClipboard_OT_copytoclipboard(bpy.types.Operator):
         self.send_to_clipboard(win32clipboard.CF_DIB, data)
         
     def execute(self, context):
-        print("yattarude")
+        scene = bpy.context.scene
+        scene.render.use_compositing = True
+
         img0 = bpy.data.images['Viewer Node']
         W,H = img0.size
+
+        print("{w},{h}".format(w=W, h=H))
+
+        if W == 0 & H == 0:
+            self.report({'WARNING'}, 'no image for copy, are vewer node exist & connected ?')
+            return {'CANCELLED'}
         
         pxs = img0.pixels[:]
         rw = np.array(pxs)
+
+        print(rw)
+
+        if np.any(np.isnan(rw)):
+            self.report({'WARNING'}, 'some data types are wrong')
+            return {'CANCELLED'}
 
         # ガンマ補正(2.2固定)
         rw[0::4] = np.power(rw[0::4]/rw[3::4], 1/2.2)
@@ -108,7 +134,8 @@ class CopyImageToClipboard_OT_copytoclipboard(bpy.types.Operator):
 
 
 classes = [
-    CopyImageToClipboard_OT_copytoclipboard
+    CopyImageToClipboard_OT_copytoclipboard,
+    testst_OT_testset
 ]
 
 def menu_func(self, context):
@@ -117,23 +144,23 @@ def menu_func(self, context):
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+    bpy.types.IMAGE_MT_image.append(menu_func)
+
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
     # 登録するショートカットキーのリストを作成
     # (キーが押されたときに実行する bpy.types.Operator のbl_idname, キー, イベント, Ctrlキー, Altキー, Shiftキー)
-    key_assign_list = [
-        (CopyImageToClipboard_OT_copytoclipboard.bl_idname, "C", "PRESS", True, False, True),
-    ]
     if kc:
-        km = kc.keymaps.new(name="Image editor", space_type="IMAGE_EDITOR")    # 「IMAGE_EDITOR」のショートカットキーとして登録
-        for (idname, key, event, ctrl, alt, shift) in key_assign_list:
-            kmi = km.keymap_items.new(
-                idname, key, event, ctrl=ctrl, alt=alt, shift=shift)    # ショートカットキーの登録
-            addon_keymaps.append((km, kmi))
+        km = wm.keyconfigs.addon.keymaps.new(name='Image', space_type='IMAGE_EDITOR')
+        kmi = km.keymap_items.new(CopyImageToClipboard_OT_copytoclipboard.bl_idname, 'C', 'PRESS', ctrl=True, shift=False)
+        addon_keymaps.append((km, kmi))
+        # kmi = km.keymap_items.new(testst_OT_testset.bl_idname, 'C', 'PRESS',  ctrl=True)
+        # addon_keymaps.append((km, kmi))
 
 
 
-    bpy.types.IMAGE_MT_image.append(menu_func)
+
+
 
 def unregister():
     for cls in classes:
