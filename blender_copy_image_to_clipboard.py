@@ -1,9 +1,15 @@
 '''
-Blender Script - Copy "Viewer Node" image to clipboard
-
+Blender Script - Copy "Viewer Node" image to clipboard (for blender 2.8)
 
 - Windows only
 - needs: Python module: Pillow (PIL), pywin32
+
+usage:
+    - setup pillow and pywin32 package with pip
+    - import this script as addon
+    - add "Vewer" node to  compositor and link it
+    - cick "Send ViewerNode Image to Clipboard" on "View > Image" menu.
+
 
 base:
     a-nakanosora/blender_copy_image_to_clipboard.py
