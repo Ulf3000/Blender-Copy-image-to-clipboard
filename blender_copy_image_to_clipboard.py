@@ -8,7 +8,8 @@ usage:
     - setup pillow and pywin32 package with pip
     - import this script as addon
     - add "Vewer" node to  compositor and link it
-    - cick "Send ViewerNode Image to Clipboard" on "View > Image" menu.
+    - cick "Send ViewerNode Image to Clipboard" on "View > Image" menu. 
+      - or press Ctrl+C on Image Editor
 
 
 base:
@@ -41,7 +42,6 @@ from io import BytesIO
 import win32clipboard
 
 
-
 bl_info = {
     "name": "Copy vewer node image to clipboard",
     "author": "skishida",
@@ -56,19 +56,22 @@ bl_info = {
     "category": "Render"
 }
 
-addon_keymaps = [] 
+addon_keymaps = []
+
 
 class testst_OT_testset(bpy.types.Operator):
-    bl_label="testshortcut"
+    bl_label = "testshortcut"
     bl_idname = "test.key"
-    
+
     def execute(self, context):
         self.report({'INFO'}, 'UGOKU')
-        return {'FINISHED'} 
+        return {'FINISHED'}
+
 
 class CopyImageToClipboard_OT_copytoclipboard(bpy.types.Operator):
-    bl_label="Send ViewerNode Image to Clipboard"
+    bl_label = "Send ViewerNode Image to Clipboard"
     bl_idname = "ci.sendtoclipboard"
+
     def send_to_clipboard(self, clip_type, data):
         win32clipboard.OpenClipboard()
         win32clipboard.EmptyClipboard()
@@ -88,22 +91,22 @@ class CopyImageToClipboard_OT_copytoclipboard(bpy.types.Operator):
         data = output.getvalue()[14:]
         output.close()
 
-
         self.send_to_clipboard(win32clipboard.CF_DIB, data)
-        
+
     def execute(self, context):
         scene = bpy.context.scene
         scene.render.use_compositing = True
 
         img0 = bpy.data.images['Viewer Node']
-        W,H = img0.size
+        W, H = img0.size
 
         # print("{w},{h}".format(w=W, h=H))
 
         if W == 0 & H == 0:
-            self.report({'WARNING'}, 'no image for copy, are vewer node exist & connected ?')
+            self.report(
+                {'WARNING'}, 'no image for copy, are vewer node exist & connected ?')
             return {'CANCELLED'}
-        
+
         pxs = img0.pixels[:]
         rw = np.array(pxs)
 
@@ -120,17 +123,18 @@ class CopyImageToClipboard_OT_copytoclipboard(bpy.types.Operator):
 
         # Blender用ピクセルを0～255の整数に変換
         a = (rw*255).astype(np.int)
-        a[a<0] = 0
-        a[a>255] = 255
+        a[a < 0] = 0
+        a[a > 255] = 255
         a = a.astype(np.uint8)
 
         import array
-        pimg = Image.frombytes("RGBA", (W,H),  array.array("B", a).tostring()  ) ## convert pixels(list) to bytes-stream
+        pimg = Image.frombytes("RGBA", (W, H),  array.array(
+            "B", a).tostring())  # convert pixels(list) to bytes-stream
         pimg = ImageOps.flip(pimg)
         self.clipboard_copy_image(pimg)
 
         self.report({'INFO'}, 'copied the image to clipboard')
-        return {'FINISHED'} 
+        return {'FINISHED'}
 
 
 classes = [
@@ -138,8 +142,10 @@ classes = [
     testst_OT_testset
 ]
 
+
 def menu_func(self, context):
     self.layout.operator(CopyImageToClipboard_OT_copytoclipboard.bl_idname)
+
 
 def register():
     for cls in classes:
@@ -151,15 +157,13 @@ def register():
     # 登録するショートカットキーのリストを作成
     # (キーが押されたときに実行する bpy.types.Operator のbl_idname, キー, イベント, Ctrlキー, Altキー, Shiftキー)
     if kc:
-        km = wm.keyconfigs.addon.keymaps.new(name='Image', space_type='IMAGE_EDITOR')
-        kmi = km.keymap_items.new(CopyImageToClipboard_OT_copytoclipboard.bl_idname, 'C', 'PRESS', ctrl=True, shift=False)
+        km = wm.keyconfigs.addon.keymaps.new(
+            name='Image', space_type='IMAGE_EDITOR')
+        kmi = km.keymap_items.new(
+            CopyImageToClipboard_OT_copytoclipboard.bl_idname, 'C', 'PRESS', ctrl=True, shift=True)
         addon_keymaps.append((km, kmi))
         # kmi = km.keymap_items.new(testst_OT_testset.bl_idname, 'C', 'PRESS',  ctrl=True)
         # addon_keymaps.append((km, kmi))
-
-
-
-
 
 
 def unregister():
@@ -171,8 +175,7 @@ def unregister():
     bpy.types.IMAGE_MT_image.remove(menu_func)
 
 
-
 if __name__ == "__main__":
     register()
-    
+
     # bpy.ops.ci.sendtoclipboard() #test
