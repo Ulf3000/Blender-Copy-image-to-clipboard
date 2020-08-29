@@ -69,14 +69,8 @@ class testst_OT_testset(bpy.types.Operator):
 
 
 class CopyImageToClipboard_OT_copytoclipboard(bpy.types.Operator):
-    bl_label = "Send ViewerNode Image to Clipboard"
+    bl_label = "Copy Image to Clipboard"
     bl_idname = "ci.sendtoclipboard"
-
-    def send_to_clipboard(self, clip_type, data):
-        win32clipboard.OpenClipboard()
-        win32clipboard.EmptyClipboard()
-        win32clipboard.SetClipboardData(clip_type, data)
-        win32clipboard.CloseClipboard()
 
     def clipboard_copy_image(self, pimg):
         import io
@@ -91,7 +85,17 @@ class CopyImageToClipboard_OT_copytoclipboard(bpy.types.Operator):
         data = output.getvalue()[14:]
         output.close()
 
-        self.send_to_clipboard(win32clipboard.CF_DIB, data)
+        CF_DIB = 8
+        GMEM_MOVEABLE = 0x0002
+
+        global_mem = kernel32.GlobalAlloc(GMEM_MOVEABLE, len(data))
+        global_data = kernel32.GlobalLock(global_mem)
+        msvcrt.memcpy(ctypes.c_char_p(global_data), data, len(data))
+        kernel32.GlobalUnlock(global_mem)
+        user32.OpenClipboard(None)
+        user32.EmptyClipboard()
+        user32.SetClipboardData(CF_DIB, global_mem)
+        user32.CloseClipboard()
 
     def execute(self, context):
         scene = bpy.context.scene
@@ -128,9 +132,7 @@ class CopyImageToClipboard_OT_copytoclipboard(bpy.types.Operator):
         a = a.astype(np.uint8)
 
         import array
-        pimg = Image.frombytes("RGBA", (W, H),  array.array(
-            "B", a).tostring())  # convert pixels(list) to bytes-stream
-        pimg = ImageOps.flip(pimg)
+        pimg = Image.frombytes("RGBA", (W,H),  array.array("B", pixels).tostring()  ) ## convert pixels(list) to bytes-stream
         self.clipboard_copy_image(pimg)
 
         self.report({'INFO'}, 'copied the image to clipboard')
